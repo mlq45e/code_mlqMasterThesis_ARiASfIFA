@@ -2868,212 +2868,129 @@ namespace sgpri_m3
 		return;
 	}
 	std::map<std::string, table_trans> intergrated_research_process(
-		Language* bl, std::string testname, std::map<std::string, table_trans> items,
-		std::string option, char len, std::string ep)
-	{// a very comprehensive research on a groupoid
+		Language* bl, std::string testname, 
+		std::map<std::string, table_trans> items,
+		std::string option, char len, std::string ep) {// a very comprehensive research on a groupoid
 		// parameter "items" provides items, which need to be researched
 		// how to provide them: see function "research_example" below
-		clock_t beg, fin;
-		std::fstream fstrm;
-		fstrm.open(testname + "_researchOnSemigroup_mainInfo.txt", std::ios_base::out);
-		if (!fstrm.is_open())
-		{
-			std::cout << "intergrated_research_process: can't open file _researchOnSemigroup\n";
-			return std::map<std::string, table_trans>();
-		}
+		clock_t beg, fin; std::fstream fstrm;
+		fstrm.open(testname 
+			+ "_researchOnSemigroup_mainInfo.txt", 
+			std::ios_base::out);
+		if (!fstrm.is_open()) { std::cout 
+			<< "intergrated_research_process: "
+			<< "can't open file _researchOnSemigroup\n";
+			return std::map<std::string, table_trans>(); }
 		std::map<std::string, table_trans> ret;
 		// introduction
-		if (len == 'l')
-		{
-			fstrm << "Language: " << bl->toStringLanguage() << std::endl;
-			std::cout << "Language: " << bl->toStringLanguage() << std::endl;
-		}
-		else
-		{
-			fstrm << "Language: " << bl->toStringLang(ep) << std::endl;
-			std::cout << "Language: " << bl->toStringLang(ep) << std::endl;
-		}
+		if (len == 'l') { fstrm << "Language: " 
+				<< bl->toStringLanguage() << std::endl; }
+		else { fstrm << "Language: " 
+				<< bl->toStringLang(ep) << std::endl; }
 		fstrm << "Research items are: ";
-		std::cout << "Research items are: ";
-		for (auto& e : items)
-		{
-			fstrm << e.first << "; ";
-			std::cout << e.first << "; ";
-		}
+		for (auto& e : items) fstrm << e.first << "; "; 
 		fstrm << std::endl;
-		std::cout << std::endl;
 		//
-		fstrm << std::endl; std::cout << std::endl;
+		fstrm << std::endl; 
 		fstrm << "Time examples:" << std::endl;
-		std::cout << "Time examples:" << std::endl;
 		fstrm << "time: get oprefix/suffix Language";
-		std::cout << "time: get oprefix/suffix Language";
 		beg = clock();
 		Language* _fix_bl = choosePrefSuffLang(bl, option);
 		fin = clock();
-		std::cout << "(" << _fix_bl->getCount() << " words)" << " = " << fin - beg << std::endl;
-		fstrm << "(" << _fix_bl->getCount() << " words)" << " = " << fin - beg << std::endl;
-		std::cout << "time: get all sublanguages";
+		fstrm << "(" << _fix_bl->getCount() << " words)" 
+			<< " = " << fin - beg << std::endl;
 		fstrm << "time: get all sublanguages";
-		beg = clock();
-		auto sublanFIXBL_pair = getAllSublang(_fix_bl);
+		beg = clock(); 
+		auto sublanFIXBL_pair = getAllSublang(_fix_bl); 
 		fin = clock();
-		std::cout << "(" << sublanFIXBL_pair.second.size() << " languages)" << " = " << fin - beg << std::endl;
-		fstrm << "(" << sublanFIXBL_pair.second.size() << " languages)" << " = " << fin - beg << std::endl;
-		std::vector<Language*> sublanFIXBL = sublanFIXBL_pair.second;
+		fstrm << "(" << sublanFIXBL_pair.second.size() 
+			<< " languages)" << " = " << fin - beg << std::endl;
+		std::vector<Language*> sublanFIXBL = 
+			sublanFIXBL_pair.second;
 		int tableSize = sublanFIXBL.size();
-		std::cout << "time: example for one semigroup operation";
 		fstrm << "time: example for one semigroup operation";
 		beg = clock();
 		Language* afterOperation = operationSemigroup_F(bl,
-			sublanFIXBL[tableSize - 1], sublanFIXBL[tableSize - 1], option);
+			sublanFIXBL[tableSize - 1], sublanFIXBL[tableSize - 1], 
+			option);
 		fin = clock();
-		std::cout << "(language:" << sublanFIXBL[tableSize - 1]->toStringLang(ep) << " )"
-			<< " = " << fin - beg << std::endl;
-		fstrm << "(language:" << sublanFIXBL[tableSize - 1]->toStringLang(ep) << " )"
-			<< " = " << fin - beg << std::endl;
-
+		fstrm << "(language:" 
+			<< sublanFIXBL[tableSize - 1]->toStringLang(ep) 
+			<< " )" << " = " << fin - beg << std::endl;
 		// build pri table of base language
-		fstrm << std::endl; std::cout << std::endl;
-		std::cout << "Building table PRI(B)..." << std::endl;
-		fstrm << "Building table PRI(B)...";
+		fstrm << std::endl; fstrm << "Building table PRI(B)...";
 		beg = clock();
-		std::string tmpstr = tablePRI_aSsOPBL_opsg_toFile(bl, testname + "_tablePRI.csv", option, len, ep);
+		std::string tmpstr = tablePRI_aSsOPBL_opsg_toFile(
+			bl, testname + "_tablePRI.csv", option, len, ep);
 		fin = clock();
 		ret[tmpstr] = std::make_pair(1, nullptr);
-		fstrm << "done" << std::endl;
+		fstrm << "done" << std::endl; 
 		fstrm << "timer: " << fin - beg << std::endl;
 		fstrm << "table file name: " << tmpstr << std::endl;
-		std::cout << "done" << std::endl;
-		std::cout << "timer: " << fin - beg << std::endl;
-		std::cout << "table file name: " << tmpstr << std::endl;
-		// well, need reading table out from file
-		std::cout << "Reading table from file...";
-		typePRI_1 table = readTable_opsg_fromFile(tmpstr, bl, option);
-		std::cout << "done" << std::endl;
-
+		// need reading table out from file
+		typePRI_1 table = readTable_opsg_fromFile(tmpstr, 
+			bl, option);
 		// check closure
-		fstrm << std::endl; std::cout << std::endl;
-		std::cout << "check closure..." << std::endl;
-		fstrm << "check closure...";
-		beg = clock();
-		std::vector<int*> testCl = testClosure_pri1(table);
+		fstrm << std::endl; fstrm << "check closure...";
+		beg = clock(); std::vector<int*> testCl = 
+			testClosure_pri1(table); 
 		fin = clock();
 		int* clt = new int[testCl.size() * 2];
-		for (int i = 0; i < testCl.size(); i++)
-		{
-			clt[i * 2 + 0] = testCl[i][0];
-			clt[i * 2 + 1] = testCl[i][1];
-		}
-		ret["closure"] = std::make_pair(testCl.size(), clt);
+		for (int i = 0; i < testCl.size(); i++) { 
+			clt[i * 2 + 0] = testCl[i][0]; clt[i * 2 + 1] = testCl[i][1]; }
+		ret["closure"] = std::make_pair(testCl.size(), clt); 
 		fstrm << "timer: " << fin - beg << std::endl;
-		std::cout << "done" << std::endl;
-		std::cout << "timer: " << fin - beg << std::endl;
-		if (testCl.size())
-		{
-			fstrm << "NOT CLOSED! Result of operation on these pairs out of boundary: ";
-			std::cout << "NOT CLOSED! Result of operation on these pairs out of boundary: ";
-			for (auto e : testCl)
-			{
-				fstrm << '(' << e[0] << ',' << e[1] << "); ";
-				std::cout << '(' << e[0] << ',' << e[1] << "); ";
-			}
+		if (testCl.size()) {
+			fstrm << "NOT CLOSED! Result of operation "
+				<< "on these pairs out of boundary: ";
+			for (auto e : testCl) fstrm << '(' << e[0] << ',' << e[1] << "); "; 
 			fstrm << std::endl;
-			std::cout << std::endl;
 			//
-			fstrm << "\n***Research halted.***\n";
-			fstrm.close();
-			std::cout << "\n***Research halted.***\n";
-			return ret;
-		}
-		else
-		{
-			fstrm << "CLOSED, got magma.";
-			std::cout << "CLOSED, got magma.";
-			fstrm << std::endl;
-			std::cout << std::endl;
-		}
-
+			fstrm << "\n***Research halted.***\n"; fstrm.close(); 
+			return ret; }
+		else { fstrm << "CLOSED, got magma."; fstrm << std::endl;}
 		// check associativity
-		fstrm << std::endl; std::cout << std::endl;
-		std::cout << "check associativity..." << std::endl;
-		fstrm << "check associativity...";
-		beg = clock();
-		std::vector<int*> testAs = testAssociativity_pri1(table);
+		fstrm << std::endl; fstrm << "check associativity...";
+		beg = clock(); 
+		std::vector<int*> testAs = testAssociativity_pri1(table); 
 		fin = clock();
 		int* ast = new int[testAs.size() * 3];
-		for (int i = 0; i < testAs.size(); i++)
-		{
-			ast[i * 2 + 0] = testAs[i][0];
-			ast[i * 2 + 1] = testAs[i][1];
-			ast[i * 2 + 2] = testAs[i][2];
-		}
+		for (int i = 0; i < testAs.size(); i++) {
+			ast[i * 2 + 0] = testAs[i][0]; 
+			ast[i * 2 + 1] = testAs[i][1]; ast[i * 2 + 2] = testAs[i][2]; }
 		ret["associativity"] = std::make_pair(testAs.size(), ast);
-		fstrm << "done" << std::endl;
+		fstrm << "done" << std::endl; 
 		fstrm << "timer: " << fin - beg << std::endl;
-		std::cout << "done" << std::endl;
-		std::cout << "timer: " << fin - beg << std::endl;
-		if (testAs.size())
-		{
-			fstrm << "NOT ASSOCIATIVITY! Operation on these triples not associative: ";
-			std::cout << "NOT ASSOCIATIVITY! Operation on these triples not associative: ";
-			for (auto e : testAs)
-			{
+		if (testAs.size()) {
+			fstrm << "NOT ASSOCIATIVITY! "
+				<< "Operation on these triples not associative: ";
+			for (auto e : testAs) 
 				fstrm << '(' << e[0] << ',' << e[1] << ',' << e[2] << "); ";
-				std::cout << '(' << e[0] << ',' << e[1] << ',' << e[2] << "); ";
-			}
-			fstrm << std::endl;
-			std::cout << std::endl;
+			fstrm << std::endl; 
 			//
-			fstrm << "\n***Research halted.***\n";
-			fstrm.close();
-			std::cout << "\n***Research halted.***\n";
-			return ret;
-		}
-		else
-		{
-			fstrm << "ASSOCIATIVE, got semigroup.";
-			std::cout << "ASSOCIATIVE, got semigroup.";
-			fstrm << std::endl;
-			std::cout << std::endl;
-		}
-
-		for (std::pair<std::string, table_trans> item : items)
-		{
-			if (item.first.find("dempotent") != std::string::npos)
-			{
+			fstrm << "\n***Research halted.***\n"; fstrm.close();
+			return ret; }
+		else { fstrm << "ASSOCIATIVE, got semigroup.";
+			fstrm << std::endl; }
+		for (std::pair<std::string, table_trans> item : items) {
+			if (item.first.find("dempotent") != std::string::npos) {
 				// find idempotents
-				fstrm << std::endl; std::cout << std::endl;
-				std::cout << "find idempotents..." << std::endl;
-				fstrm << "find idempotents...";
-				beg = clock();
-				std::vector<int> idem = getIdempotent_pri1(table.second);
+				fstrm << std::endl; fstrm << "find idempotents...";
+				beg = clock(); 
+				std::vector<int> idem = 
+					getIdempotent_pri1(table.second); 
 				fin = clock();
-				ret["idempotent"] = std::make_pair(idem.size(), idem.data());
-				fstrm << "done" << std::endl;
+				ret["idempotent"] = std::make_pair(
+					idem.size(), idem.data());
+				fstrm << "done" << std::endl; 
 				fstrm << "timer: " << fin - beg << std::endl;
-				std::cout << "done" << std::endl;
-				std::cout << "timer: " << fin - beg << std::endl;
-				if (idem.size())
-				{
-					fstrm << "GOT IDEMPOTENTS! In semigroup " << idem.size() << " idempotents: ";
-					std::cout << "GOT IDEMPOTENTS! In semigroup " << idem.size() << " idempotents: ";
-					for (int e : idem)
-					{
-						fstrm << e << "; ";
-						std::cout << e << "; ";
-					}
-					fstrm << std::endl;
-					std::cout << std::endl;
-				}
-				else
-				{
-					fstrm << "NOT IDEMPOTENT.";
-					std::cout << "NOT IDEMPOTENT.";
-					fstrm << std::endl;
-					std::cout << std::endl;
-				}
-			}
+				if (idem.size()) {
+					fstrm << "GOT IDEMPOTENTS! In semigroup " 
+						<< idem.size() << " idempotents: ";
+					for (int e : idem) fstrm << e << "; "; 
+					fstrm << std::endl; }
+				else {
+					fstrm << "NOT IDEMPOTENT."; fstrm << std::endl; } }
 			else if (item.first.find("dentity") != std::string::npos)
 			{
 				if ((item.first.find("wo") != std::string::npos)
@@ -3385,19 +3302,11 @@ namespace sgpri_m3
 				fstrm << std::endl;
 				std::cout << std::endl;
 			}
-			else
-			{
-				fstrm << std::endl; std::cout << std::endl;
-				fstrm << "?WHAT IS ITEM: " << item.first << std::endl;
-				std::cout << "?WHAT IS ITEM: " << item.first << std::endl;
-			}
-		}
+			else { fstrm << std::endl;
+				fstrm << "?WHAT IS ITEM: " << item.first << std::endl; } }
 		// finish
-		fstrm << "\n***Research finished.***\n";
-		fstrm.close();
-		std::cout << "\n***Research finished.***\n";
-		return ret;
-	}
+		fstrm << "\n***Research finished.***\n"; fstrm.close();
+		return ret; }
 	void research_example()
 	{// provide an example of providing researching items
 		Language* b = readLangFromString("{a,aaa}");

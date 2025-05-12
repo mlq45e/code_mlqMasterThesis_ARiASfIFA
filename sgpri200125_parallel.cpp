@@ -204,196 +204,134 @@ int main14(int argc, char* argv[])
 	auto begin = MPI_Wtime();
 	//
 	Language* a = readLangFromString("{a,ab,abba}");
-	Language* b = readLangFromString(
-		"{a,aab,baabababab,bababaababa}");
-	auto b_asl = getAllSublang(choosePrefSuffLang(
-		b, "BfollowA"));
+	Language* b = readLangFromString("{a,aab,baabababab,bababaababa}");
+	auto b_asl = getAllSublang(choosePrefSuffLang(b, "BfollowA"));
 	std::vector<Language*> AbyWord;
-	for (auto& e : a->getWords())
-	{
-		Language* tmpl = new Language(a->getAlphabet());
-		tmpl->addWord_(e.first);
-		tmpl->cleanBadWords();
-		AbyWord.push_back(tmpl);
-	}
-	int qbsize = b_asl.second.size(), awsize = AbyWord.size();
-	int i = 0, j = 0;
-	//
-	if (mpirank == 0)
-	{
-		int* transformindex = new int[qbsize];
-		std::vector<Language*> att;
+	for (auto& e : a->getWords()) {
+		Language* tmpl = new Language(a->getAlphabet()); tmpl->addWord_(e.first);
+		tmpl->cleanBadWords(); AbyWord.push_back(tmpl); }
+	int qbsize = b_asl.second.size(), awsize = AbyWord.size(); int i = 0, j = 0;
+	if (mpirank == 0) {
+		int* transformindex = new int[qbsize]; std::vector<Language*> att;
 		for (i = 2; i < qbsize; i++) transformindex[i] = -1;
-		transformindex[0] = 0;
-		transformindex[1] = 1;
+		transformindex[0] = 0; transformindex[1] = 1;
 		int round = 2;
-		std::vector<int*> tablePRI_vec;
-		std::set<int> newlang, attained;
-		attained.insert(0);
-		attained.insert(1);
-		att.push_back(b_asl.second[0]);
-		att.push_back(b_asl.second[1]);
-		for (i = 0; i < 2; i++)
-		{
+		std::vector<int*> tablePRI_vec; std::set<int> newlang, attained;
+		attained.insert(0); attained.insert(1);
+		att.push_back(b_asl.second[0]); att.push_back(b_asl.second[1]);
+		for (i = 0; i < 2; i++) {
 			int* tmpline = new int[awsize];
-			for (j = 0; j < awsize; j++)
-			{
+			for (j = 0; j < awsize; j++) {
 				tmpline[j] = findLanguageInSubLangs(
-					Phi_AminusB(
-						AbyWord[j], b, b_asl.second[i], "BfollowA"),
-					b_asl);
-				if (attained.find(tmpline[j]) == attained.end()) 
-					newlang.insert(tmpline[j]);
-				cnt++;
-			}
-			tablePRI_vec.push_back(tmpline);
-		}
+					Phi_AminusB( AbyWord[j], b, b_asl.second[i], "BfollowA"), b_asl);
+				if (attained.find(tmpline[j]) == attained.end()) newlang.insert(tmpline[j]);
+				cnt++; }
+			tablePRI_vec.push_back(tmpline); }
 		newlangamount = newlang.size();
-		MPI_Bcast(&newlangamount, 1, 
-			MPI_INT, 0, MPI_COMM_WORLD);
-		while (newlangamount)
-		{
-			int* newlangpool = new int[newlangamount]();
-			i = 0;
-			for (int e : newlang)
-			{
-				newlangpool[i] = e;
-				attained.insert(e);
-				i++;
-				transformindex[e] = round;
-				round++;
-				att.push_back(b_asl.second[e]);
-			}
+		MPI_Bcast(&newlangamount, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		while (newlangamount) {
+			int* newlangpool = new int[newlangamount](); i = 0;
+			for (int e : newlang) {
+				newlangpool[i] = e; attained.insert(e); i++;
+				transformindex[e] = round; round++; 
+				att.push_back(b_asl.second[e]); }
 			newlang.clear();
-			MPI_Bcast(newlangpool, newlangamount, 
-				MPI_INT, 0, MPI_COMM_WORLD);
+			MPI_Bcast(newlangpool, newlangamount, MPI_INT, 0, MPI_COMM_WORLD);
 			int* reslangpool = new int[newlangamount * awsize];
 			reslangpool[0] = -1;
-			for (i = mpirank; i < newlangamount * awsize; i += mpisize)
-			{
+			for (i = mpirank; i < newlangamount * awsize; i += mpisize) {
 				reslangpool[i] = findLanguageInSubLangs(
 					Phi_AminusB(AbyWord[i % awsize], b, 
-						b_asl.second[newlangpool[i / awsize]], "BfollowA"),
-					b_asl);
-				if (attained.find(reslangpool[i]) == attained.end()) 
+						b_asl.second[newlangpool[i / awsize]], "BfollowA"), b_asl);
+				if (attained.find(reslangpool[i]) == attained.end())
 					newlang.insert(reslangpool[i]);
-				cnt++;
-			}
+				cnt++; }
 			j = mpisize - 1;
-			while (j)
-			{
+			while (j) {
 				int* reslangrecv = new int[newlangamount * awsize];
 				MPI_Request mpirq;
 				MPI_Irecv(reslangrecv, newlangamount * awsize, MPI_INT,
 					MPI_ANY_SOURCE, MPI_ANY_TAG, 
 					MPI_COMM_WORLD, &mpirq);
 				MPI_Wait(&mpirq, MPI_STATUS_IGNORE);
-				for (i = reslangrecv[0]; i < newlangamount * awsize; i += mpisize)
-				{
+				for (i = reslangrecv[0]; i < newlangamount * awsize; i += mpisize) {
 					reslangpool[i] = reslangrecv[i];
 					if (attained.find(reslangpool[i]) == attained.end()) 
-						newlang.insert(reslangpool[i]);
-				}
-				j--;
-			}
-			for (i = 0; i < newlangamount; i++)
-			{
+						newlang.insert(reslangpool[i]); }
+				j--; }
+			for (i = 0; i < newlangamount; i++) {
 				int* tmpline = new int[awsize];
-				for (j = 0; j < awsize; j++)
-					tmpline[j] = reslangpool[i * awsize + j];
-				tablePRI_vec.push_back(tmpline);
-			}
+				for (j = 0; j < awsize; j++) tmpline[j] = reslangpool[i * awsize + j];
+				tablePRI_vec.push_back(tmpline); }
 			newlangamount = newlang.size();
 			MPI_Barrier(MPI_COMM_WORLD);
-			MPI_Bcast(&newlangamount, 1, 
-				MPI_INT, 0, MPI_COMM_WORLD);
-		}
-		//
+			MPI_Bcast(&newlangamount, 1, MPI_INT, 0, MPI_COMM_WORLD); }
 		int* tablePRI = new int[attained.size() * awsize];
-		for (i = 0; i < attained.size(); i++)
-		{
-			for (j = 0; j < awsize; j++)
-			{
-				tablePRI[i * awsize + j] = 
-					transformindex[tablePRI_vec[i][j]];
-			}
-		}
-		while (tablePRI_vec.size())
-		{
-			auto it = tablePRI_vec.begin();
-			delete[](*it);
-			tablePRI_vec.erase(it);
-		}
+		for (i = 0; i < attained.size(); i++) {
+			for (j = 0; j < awsize; j++) {
+				tablePRI[i * awsize + j] = transformindex[tablePRI_vec[i][j]]; } }
+		while (tablePRI_vec.size()) {
+			auto it = tablePRI_vec.begin(); delete[](*it); tablePRI_vec.erase(it); }
 		auto finish = MPI_Wtime();
 		std::cout << "no." << mpirank << " counted:" << cnt
-			<< " time: " << finish - begin << std::endl;
-	}
-	else
-	{
+			<< " time: " << finish - begin << std::endl; }
+	else {
 		newlangamount = 0;
 		MPI_Bcast(&newlangamount, 1, MPI_INT, 0, MPI_COMM_WORLD);
-		while (newlangamount > 0)
-		{
+		while (newlangamount > 0) {
 			int* newlangpool = new int[newlangamount];
 			MPI_Bcast(newlangpool, newlangamount, 
 				MPI_INT, 0, MPI_COMM_WORLD);
 			int* reslangpool = new int[newlangamount * awsize];
 			reslangpool[0] = -1;
-			for (i = mpirank; i < newlangamount * awsize; i += mpisize)
-			{
+			for (i = mpirank; i < newlangamount * awsize; i += mpisize) {
 				reslangpool[i] = findLanguageInSubLangs(
 					Phi_AminusB(AbyWord[i % awsize], b, 
-						b_asl.second[newlangpool[i / awsize]], "BfollowA"),
-					b_asl);
-				cnt++;
-			}
-			reslangpool[0] = mpirank;
-			MPI_Request mpirq;
+						b_asl.second[newlangpool[i / awsize]], "BfollowA"), b_asl);
+				cnt++; }
+			reslangpool[0] = mpirank; MPI_Request mpirq;
 			MPI_Isend(reslangpool, newlangamount * awsize, 
 				MPI_INT, 0, mpirank, MPI_COMM_WORLD, &mpirq);
 			MPI_Wait(&mpirq, MPI_STATUS_IGNORE);
-			delete[] newlangpool;
-			delete[] reslangpool;
+			delete[] newlangpool; delete[] reslangpool;
 			MPI_Barrier(MPI_COMM_WORLD);
-			MPI_Bcast(&newlangamount, 1, 
-				MPI_INT, 0, MPI_COMM_WORLD);
+			MPI_Bcast(&newlangamount, 1, MPI_INT, 0, MPI_COMM_WORLD);
 		}
 		auto finish = MPI_Wtime();
 		std::cout << "no." << mpirank << " counted:" << cnt
-			<< " time: " << finish - begin << std::endl;
-	}
-	//
+			<< " time: " << finish - begin << std::endl; }
 	MPI_Finalize();
 	return 0;
 }
 typePRI_1 tablePRI_groupoid_mpi(
 	Language* bl, std::string option,
-	int mpiRank, int mpiSize, int mpiMain, MPI_Comm mpiComm, 
-	bool timer = true)
-{
+	int mpiRank, int mpiSize, int mpiMain, 
+	MPI_Comm mpiComm, 
+	bool timer = true) {
 	auto begin = MPI_Wtime();
 	int cnt = 0;
 	auto sublan_pair = getAllSublang(
 		choosePrefSuffLang(bl, option));
-	std::vector<Language*> sublanBL = sublan_pair.second;
+	std::vector<Language*> sublanBL = 
+		sublan_pair.second;
 	std::vector<std::pair<
-		int, std::vector<int*>>> subsetmodel = sublan_pair.first;
+		int, std::vector<int*>>> subsetmodel = 
+		sublan_pair.first;
 	int tableSize = sublanBL.size();
 	int* tableSG = new int[tableSize * tableSize]();
 	for (int i = mpiRank; i < tableSize * tableSize; i += mpiSize)
 	{
 		tableSG[i] = -1;
 		Language* resCov = operationSemigroup_F(bl, 
-			sublanBL[(int)(i / tableSize)], sublanBL[(int)(i % tableSize)], 
+			sublanBL[(int)(i / tableSize)], 
+			sublanBL[(int)(i % tableSize)], 
 			option);
 		resCov->cleanBadWords(false);
 		tableSG[i] = findLanguageInSubLangs(
 			resCov, sublanBL, subsetmodel);
 		delete resCov;
-		cnt++;
-	}
-	if (mpiRank != mpiMain)
-	{
+		cnt++; }
+	if (mpiRank != mpiMain) {
 		tableSG[0] = mpiRank;
 		MPI_Request req;
 		MPI_Isend(tableSG, tableSize * tableSize, 
@@ -403,31 +341,25 @@ typePRI_1 tablePRI_groupoid_mpi(
 			for (int j = 0; j < subsetmodel[i].second.size(); j++)
 				delete[] subsetmodel[i].second[j];
 		std::vector<std::pair<
-			int, std::vector<int*>>>().swap(subsetmodel);
-	}
-	else
-	{
+			int, std::vector<int*>>>().swap(subsetmodel); }
+	else {
 		int waitNum = mpiSize;
-		while (waitNum > 1)
-		{
+		while (waitNum > 1) {
 			int* tabletemp = new int[tableSize * tableSize]();
 			MPI_Request req;
 			MPI_Irecv(tabletemp, tableSize * tableSize, MPI_INT,
-				MPI_ANY_SOURCE, MPI_ANY_TAG, mpiComm, &req);
+				MPI_ANY_SOURCE, MPI_ANY_TAG, 
+				mpiComm, &req);
 			MPI_Wait(&req, MPI_STATUS_IGNORE);
-			for (int i = tabletemp[0]; i < tableSize * tableSize; i += mpiSize)
+			for (int i = tabletemp[0]; 
+				i < tableSize * tableSize; i += mpiSize)
 				tableSG[i] = tabletemp[i];
-			delete[] tabletemp;
-			waitNum--;
-		}
-		tableSG[0] = 0;
-	}
-	if (timer)
-	{
+			delete[] tabletemp; waitNum--; }
+		tableSG[0] = 0; }
+	if (timer) {
 		auto finish = MPI_Wtime();
 		std::cout << "No." << mpiRank << " counted:" << cnt
-			<< " time: " << finish - begin << std::endl;
-	}
+			<< " time: " << finish - begin << std::endl; }
 	return std::make_pair(std::make_pair(bl, sublanBL), 
 		std::make_pair(tableSize, tableSG));
 }
